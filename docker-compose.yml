@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: iris_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: irisdb
+      POSTGRES_USER: iris
+      POSTGRES_PASSWORD: iris
+    ports:
+      - "5432:5432"
+    volumes:
+      - iris_db_data:/var/lib/postgresql/data
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.12.2
+    container_name: mlflow_server
+    restart: unless-stopped
+    environment:
+      MLFLOW_BACKEND_STORE_URI: "sqlite:///mlflow.db"
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: "/mlflow/mlruns"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlflow.db:/mlflow/mlflow.db
+      - ./mlruns:/mlflow/mlruns
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /mlflow/mlruns
+      --host 0.0.0.0
+      --port 5000
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iris_api
+    restart: unless-stopped
+    environment:
+      MODEL_DIR: /app/models/iris_classifier
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+    depends_on:
+      - db
+      - mlflow
+
+volumes:
+  iris_db_data:

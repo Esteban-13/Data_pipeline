@@ -1,0 +1,32 @@
+artifact_path: file:C:/Users/Utilisateur/Documents/Kiara_pro/Cours/PGD_3/DataPipeline/datapip/Data_pipeline/mlruns/3/models/m-7487afffde154e4aaf86c226d9cb88d5/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.10
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+is_signature_from_type_hint: false
+mlflow_version: 3.9.0
+model_id: m-7487afffde154e4aaf86c226d9cb88d5
+model_size_bytes: 1409
+model_uuid: m-7487afffde154e4aaf86c226d9cb88d5
+prompts: null
+run_id: 1a99e1847fac4ba4ab5a41d374e1c877
+signature:
+  inputs: '[{"type": "double", "name": "sepal_length", "required": true}, {"type":
+    "double", "name": "sepal_width", "required": true}, {"type": "double", "name":
+    "petal_length", "required": true}, {"type": "double", "name": "petal_width", "required":
+    true}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "object", "shape": [-1]}}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2026-02-03 00:03:29.151888'
