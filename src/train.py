@@ -1,5 +1,4 @@
 import os
-
 import mlflow
 import mlflow.sklearn
 import pandas as pd
@@ -10,21 +9,33 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 
-# 1. Configuration de l'expérience
+# 1. Configuration
 mlflow.set_experiment("Pipeline_Iris_Classification")
 
-# 2. Chargement des données depuis PostgreSQL
+# 2. Chargement des données (Sécurisé pour Docker)
 db_host = os.getenv("DB_HOST", "localhost")
 db_port = int(os.getenv("DB_PORT", "5432"))
 db_name = os.getenv("DB_NAME", "irisdb")
 db_user = os.getenv("DB_USER", "iris")
 db_password = os.getenv("DB_PASSWORD", "iris")
 
-conn = psycopg2.connect(
-    host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password
-)
-df = pd.read_sql("SELECT * FROM iris", conn)
-conn.close()
+try:
+    print("Tentative de connexion à PostgreSQL...")
+    conn = psycopg2.connect(
+        host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password,
+        connect_timeout=3
+    )
+    df = pd.read_sql("SELECT * FROM iris", conn)
+    conn.close()
+    print("Données chargées depuis SQL.")
+except Exception as e:
+    print(f"Erreur SQL : {e}")
+    print("Repli sur le fichier iris.csv local...")
+    df = pd.read_csv("data/iris.csv")
+
+# Nettoyage simple des colonnes si besoin (pour matcher les noms du CSV)
+if 'species' not in df.columns and 'target' in df.columns:
+    df = df.rename(columns={'target': 'species'})
 
 # Features / cible
 feature_cols = ["sepal_length", "sepal_width", "petal_length", "petal_width"]
@@ -35,11 +46,10 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-# 3. Autologging pour la traçabilité
+# 3. Entraînement
 mlflow.sklearn.autolog()
 
 with mlflow.start_run(run_name="Classification_Iris"):
-    # Modèle de classification
     model = Pipeline(
         steps=[
             ("scaler", StandardScaler()),
@@ -53,16 +63,8 @@ with mlflow.start_run(run_name="Classification_Iris"):
     accuracy = accuracy_score(y_test, predictions)
     f1 = f1_score(y_test, predictions, average="weighted")
 
-    # Log manuel des métriques spécifiques
     mlflow.log_metric("accuracy", accuracy)
     mlflow.log_metric("f1_weighted", f1)
 
-    # Sauvegarde locale du modèle pour la prédiction (et future dockerisation)
-    model_dir = os.getenv("MODEL_DIR", "models/iris_classifier")
-    os.makedirs(model_dir, exist_ok=True)
-    mlflow.sklearn.save_model(model, model_dir)
-
-    # Log du modèle dans MLflow Tracking (sans Model Registry)
-    mlflow.sklearn.log_model(model, artifact_path="iris_classifier_model")
-
-    print(f"Entraînement terminé. Accuracy: {accuracy:.4f}, F1: {f1:.4f}")
+    print(f"Entraînement terminé avec succès !")
+    print(f"Accuracy: {accuracy:.4f}, F1: {f1:.4f}")
